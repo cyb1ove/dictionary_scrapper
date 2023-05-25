@@ -59,17 +59,39 @@ class LoginManager {
       
       wordCards.forEach(async (card) => {
         const wordObject = {};
+
         const wordNode = await card.$('.puzzle-card__eng-word-current');
         wordObject.word = await wordNode.evaluate((node) => node.innerText);
+        wordObject.word = wordObject.word.replace(/\b(a|an|to)\b/gi, '').trim();
+
         const translationNode = await card.$(".puzzle-card__rus-word");
         wordObject.translation = await translationNode.evaluate((node) => node.innerText);
+
+        const transcriptionBritishNode = await card.$(".british_transcription");
+        const transcriptionAmericanNode = await card.$(".american_transcription");
+        const transcriptionAllNode = await card.$(".j-sameTranscriptions");
+        const isPhraseNode = await card.$(".dict__video__list-table__word__type");
+
+        if (isPhraseNode) {
+          wordObject.isPhrase = true;
+        } else if (transcriptionAllNode) {
+          wordObject.british_transcription = await transcriptionAllNode.evaluate((node) => node.innerText);
+          wordObject.american_transcription = await transcriptionAllNode.evaluate((node) => node.innerText);
+          wordObject.british_transcription = wordObject.british_transcription.trim();
+          wordObject.american_transcription = wordObject.american_transcription.trim();
+        } else {
+          wordObject.british_transcription = await transcriptionBritishNode.evaluate((node) => node.innerText);
+          wordObject.american_transcription = await transcriptionAmericanNode.evaluate((node) => node.innerText);
+          wordObject.british_transcription = wordObject.british_transcription.trim();
+          wordObject.american_transcription = wordObject.american_transcription.trim();
+        }
         
         exportedWords.push(wordObject);
       });
 
       const nextPage = await this.page.$('.paginator-style-2__right');
       await nextPage.click();
-      await this.page.waitForTimeout(1000);
+      await this.page.waitForTimeout(2000);
     }
 
     const promises = exportedWords.map(async (word) => {
@@ -96,6 +118,8 @@ class LoginManager {
       return response.json();
     });
     const videos = await Promise.all(promises);
+
+    console.log(videos);
   }
 }
 
