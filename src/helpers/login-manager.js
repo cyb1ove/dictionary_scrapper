@@ -67,6 +67,53 @@ class LoginManager {
         const translationNode = await card.$(".puzzle-card__rus-word");
         wordObject.translation = await translationNode.evaluate((node) => node.innerText);
 
+        const postId = await card.evaluate((node) => node.getAttribute('data-post_id'));
+        const pieceIndex = await card.evaluate((node) => node.getAttribute('data-piece_index'));
+
+        const responseForVideos = await fetch(
+          "https://puzzle-english.com/",
+          {
+            "headers": {
+              "accept": "*/*",
+              "accept-language": "en-US,en;q=0.9",
+              "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+              "sec-fetch-dest": "empty",
+              "sec-fetch-mode": "cors",
+              "sec-fetch-site": "same-origin",
+              "x-requested-with": "XMLHttpRequest"
+            },
+            "referrer": "https://puzzle-english.com/dictionary",
+            "referrerPolicy": "strict-origin-when-cross-origin",
+            "body": `ajax_action=ajax_cards_getWordVideos&word=${wordObject.word}&translation=${encodeURIComponent(wordObject.translation)}`,
+            "method": "POST",
+            "mode": "cors",
+            "credentials": "include"
+          }
+        );
+        wordObject.videos = await responseForVideos.json();
+
+        const responseForAdditionalInformation = await fetch(
+          "https://puzzle-english.com/",
+          {
+            "credentials": "include",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0",
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin"
+            },
+            "referrer": "https://puzzle-english.com/dictionary?view=cards&item=word",
+            "body": `location=https%3A%2F%2Fpuzzle-english.com%2Fdictionary%3Fview%3Dcards%26item%3Dword&ajax_action=ajax_balloon_Show&post_id=${postId}&piece_index=${pieceIndex}&translation=${encodeURIComponent(wordObject.translation)}&word=${wordObject.word}&parent_expression=&expression_form=&is_word_with_type_search=0&with_video=0`,
+            "method": "POST",
+            "mode": "cors"
+          }
+        )
+        wordObject.info = await responseForAdditionalInformation.json();
+
         const transcriptionBritishNode = await card.$(".british_transcription");
         const transcriptionAmericanNode = await card.$(".american_transcription");
         const transcriptionAllNode = await card.$(".j-sameTranscriptions");
@@ -94,32 +141,7 @@ class LoginManager {
       await this.page.waitForTimeout(2000);
     }
 
-    const promises = exportedWords.map(async (word) => {
-      const response = await fetch(
-        "https://puzzle-english.com/",
-        {
-          "headers": {
-            "accept": "*/*",
-            "accept-language": "en-US,en;q=0.9",
-            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "x-requested-with": "XMLHttpRequest"
-          },
-          "referrer": "https://puzzle-english.com/dictionary",
-          "referrerPolicy": "strict-origin-when-cross-origin",
-          "body": `ajax_action=ajax_cards_getWordVideos&word=${word.word}&translation=${encodeURIComponent(word.translation)}`,
-          "method": "POST",
-          "mode": "cors",
-          "credentials": "include"
-        }
-      );
-      return response.json();
-    });
-    const videos = await Promise.all(promises);
-
-    console.log(videos);
+    console.log(exportedWords);
   }
 }
 
